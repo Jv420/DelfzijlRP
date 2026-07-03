@@ -76,3 +76,5 @@ ensure delfzijlrp_core
 ensure delfzijlrp_shops
 ensure delfzijlrp_crime
 ensure delfzijlrp_banking
+ensure delfzijlrp_garages
+ensure delfzijl_vehicledealer
