@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Delfzijl RP'
 description 'Delfzijl RP Port - havenlogistiek, containers, import/export en douane RP'
-version '0.1.0'
+version '0.1.1'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -30,7 +30,7 @@ dependencies {
     'oxmysql',
     'es_extended',
     'delfzijlrp_dispatch',
-    'delfzijlrp_business'
+    'delfzijlrp_business_v2'
 }
 
 lua54 'yes'
