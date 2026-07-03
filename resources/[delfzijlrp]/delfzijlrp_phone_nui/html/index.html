@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Delfzijl Phone</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <main id="phone" class="phone hidden">
+        <section class="screen">
+            <header class="statusbar">
+                <span id="time">12:00</span>
+                <span>Delfzijl RP • 5G 🔋</span>
+            </header>
+
+            <section id="home" class="view active">
+                <div class="hero">
+                    <p class="city">Delfzijl RP</p>
+                    <h1 id="welcome">Welkom</h1>
+                    <p id="iban">IBAN laden...</p>
+                </div>
+                <div id="apps" class="apps"></div>
+            </section>
+
+            <section id="identity" class="view">
+                <button class="back" data-view="home">← Terug</button>
+                <h2>Delfzijl ID</h2>
+                <div id="identityCard" class="card"></div>
+            </section>
+
+            <section id="bank" class="view">
+                <button class="back" data-view="home">← Terug</button>
+                <h2>Bank</h2>
+                <div id="bankCard" class="card"></div>
+                <h3>Laatste transacties</h3>
+                <div id="transactions" class="list"></div>
+                <button class="primary" data-command="bank">Open bankmenu</button>
+            </section>
+
+            <section id="settings" class="view">
+                <button class="back" data-view="home">← Terug</button>
+                <h2>Instellingen</h2>
+                <div class="card">
+                    <label>Accentkleur</label>
+                    <select id="accent">
+                        <option value="yellow">Geel</option>
+                        <option value="blue">Blauw</option>
+                        <option value="green">Groen</option>
+                    </select>
+                    <label>Achtergrond</label>
+                    <select id="wallpaper">
+                        <option value="delfzijl">Delfzijl</option>
+                        <option value="dark">Donker</option>
+                        <option value="harbor">Haven</option>
+                    </select>
+                    <button id="saveSettings" class="primary">Opslaan</button>
+                </div>
+            </section>
+
+            <footer class="dock">
+                <button data-view="home">🏠</button>
+                <button data-view="identity">🪪</button>
+                <button data-view="bank">🏦</button>
+                <button data-view="settings">⚙️</button>
+            </footer>
+        </section>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
