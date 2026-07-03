@@ -38,6 +38,23 @@ CREATE TABLE IF NOT EXISTS `delfzijlrp_city_reports` (
   KEY `status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `delfzijlrp_city_taxes` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `identifier` varchar(64) NOT NULL,
+  `person_name` varchar(128) DEFAULT NULL,
+  `tax_type` varchar(64) NOT NULL,
+  `amount` int NOT NULL DEFAULT 0,
+  `description` varchar(255) NOT NULL,
+  `status` varchar(32) NOT NULL DEFAULT 'open',
+  `due_at` datetime DEFAULT NULL,
+  `paid_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `identifier` (`identifier`),
+  KEY `tax_type` (`tax_type`),
+  KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `delfzijlrp_city_logs` (
   `id` int NOT NULL AUTO_INCREMENT,
   `actor_identifier` varchar(64) DEFAULT NULL,
