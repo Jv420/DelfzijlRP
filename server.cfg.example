@@ -1,0 +1,75 @@
+# =============================================
+# Delfzijl RP - ESX Legacy
+# Kopieer dit bestand lokaal naar server.cfg
+# =============================================
+
+endpoint_add_tcp "0.0.0.0:30120"
+endpoint_add_udp "0.0.0.0:30120"
+
+sv_hostname "Delfzijl RP | ESX Legacy | Nederland RP"
+sets sv_projectName "Delfzijl RP"
+sets sv_projectDesc "Nederlandse roleplayserver met een eigen Delfzijl-identiteit"
+sets locale "nl-NL"
+
+sv_maxclients 32
+set onesync on
+set sv_enforceGameBuild 3095
+
+# Vul deze waarden alleen in je lokale server.cfg in
+sv_licenseKey "VUL_HIER_JE_FIVEM_LICENSE_KEY_IN"
+set steam_webApiKey "VUL_HIER_JE_STEAM_WEB_API_KEY_IN"
+set mysql_connection_string "mysql://root:WACHTWOORD@127.0.0.1/delfzijlrp?charset=utf8mb4"
+
+# ESX / OX
+setr esx:locale "nl"
+setr inventory:framework "esx"
+setr inventory:slots 50
+setr inventory:weight 30000
+setr inventory:target true
+
+# Adminvoorbeeld
+add_ace group.admin command allow
+add_principal identifier.license:VUL_HIER_JE_LICENSE_IDENTIFIER_IN group.admin
+
+# FiveM basis
+ensure mapmanager
+ensure chat
+ensure spawnmanager
+ensure sessionmanager
+ensure hardcap
+ensure baseevents
+
+# Dependencies
+ensure oxmysql
+ensure ox_lib
+
+# Framework
+ensure es_extended
+ensure ox_target
+ensure ox_inventory
+ensure ox_doorlock
+
+# ESX menus
+ensure esx_menu_default
+ensure esx_menu_dialog
+ensure esx_menu_list
+
+# ESX basis
+ensure esx_addonaccount
+ensure esx_addoninventory
+ensure esx_datastore
+ensure esx_society
+ensure esx_license
+ensure esx_billing
+ensure esx_status
+ensure esx_basicneeds
+ensure esx_optionalneeds
+
+# Jobs
+ensure esx_policejob
+ensure esx_ambulancejob
+ensure esx_mechanicjob
+ensure esx_taxijob
+
+# Delfzijl RP
+ensure delfzijlrp_core
