@@ -1,6 +1,7 @@
 # =============================================
-# Delfzijl RP - ESX Legacy
+# Delfzijl RP - ESX Legacy server.cfg.example
 # Kopieer dit bestand lokaal naar server.cfg
+# Vul echte keys alleen lokaal in, niet in GitHub.
 # =============================================
 
 endpoint_add_tcp "0.0.0.0:30120"
@@ -8,20 +9,20 @@ endpoint_add_udp "0.0.0.0:30120"
 
 sv_hostname "Delfzijl RP | ESX Legacy | Nederland RP"
 sets sv_projectName "Delfzijl RP"
-sets sv_projectDesc "Nederlandse roleplayserver met een eigen Delfzijl-identiteit"
+sets sv_projectDesc "Nederlandse roleplayserver met eigen Delfzijl-systemen"
 sets locale "nl-NL"
 
 sv_maxclients 32
 set onesync on
 set sv_enforceGameBuild 3095
 
-# Vul deze waarden alleen in je lokale server.cfg in
 sv_licenseKey "VUL_HIER_JE_FIVEM_LICENSE_KEY_IN"
 set steam_webApiKey "VUL_HIER_JE_STEAM_WEB_API_KEY_IN"
 set mysql_connection_string "mysql://root:WACHTWOORD@127.0.0.1/delfzijlrp?charset=utf8mb4"
 
-# ESX / OX
+# ESX / OX instellingen
 setr esx:locale "nl"
+setr ox:locale "nl"
 setr inventory:framework "esx"
 setr inventory:slots 50
 setr inventory:weight 30000
@@ -39,15 +40,15 @@ ensure sessionmanager
 ensure hardcap
 ensure baseevents
 
-# Dependencies
+# Dependencies eerst
 ensure oxmysql
 ensure ox_lib
-
-# Framework
-ensure es_extended
 ensure ox_target
 ensure ox_inventory
 ensure ox_doorlock
+
+# ESX Framework
+ensure es_extended
 
 # ESX menus
 ensure esx_menu_default
@@ -65,16 +66,39 @@ ensure esx_status
 ensure esx_basicneeds
 ensure esx_optionalneeds
 
-# Jobs
+# ESX jobresources
 ensure esx_policejob
 ensure esx_ambulancejob
 ensure esx_mechanicjob
 ensure esx_taxijob
 
-# Delfzijl RP
+# Delfzijl RP kernlaag
 ensure delfzijlrp_core
-ensure delfzijlrp_shops
-ensure delfzijlrp_crime
-ensure delfzijlrp_banking
-ensure delfzijlrp_garages
-ensure delfzijl_vehicledealer
+ensure delfzijlrp_identity
+ensure delfzijlrp_banking2
+ensure delfzijlrp_dispatch
+ensure delfzijlrp_vehicles
+
+# Delfzijl RP voertuigen en diensten
+ensure delfzijlrp_garage
+ensure delfzijlrp_anwb
+ensure delfzijlrp_taxi
+
+# Delfzijl RP overheid en administratie
+ensure delfzijlrp_city
+ensure delfzijlrp_mdt_v2
+ensure delfzijlrp_court
+ensure delfzijlrp_prison
+ensure delfzijlrp_fire_rescue
+
+# Delfzijl RP economie en wereldsystemen
+ensure delfzijlrp_business_v2
+ensure delfzijlrp_groups
+ensure delfzijlrp_housing_v2
+ensure delfzijlrp_marketplace
+ensure delfzijlrp_port
+ensure delfzijlrp_public_transport
+ensure delfzijlrp_cityhub
+
+# Delfzijl RP UI / telefoon
+ensure delfzijlrp_phone_nui
