@@ -157,8 +157,7 @@ local function openMdt()
             { title = 'Persoon zoeken', icon = 'user-magnifying-glass', onSelect = searchPeople },
             { title = 'Voertuig/RDW zoeken', icon = 'car', onSelect = searchVehicles },
             { title = 'Dispatch meldingen', icon = 'tower-broadcast', onSelect = openDispatch },
-            { title = 'Rechtbankdossiers', icon = 'scale-balanced', onSelect = openCourtCases },
-            { title = 'Oude MDT openen', description = '/mdt als je deze command wijzigt', icon = 'tablet-screen-button', onSelect = function() ExecuteCommand('mdt') end }
+            { title = 'Rechtbankdossiers', icon = 'scale-balanced', onSelect = openCourtCases }
         }
     })
     lib.showContext('delfzijlrp_mdt_v2_main')
