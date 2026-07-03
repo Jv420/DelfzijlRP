@@ -74,3 +74,4 @@ ensure esx_taxijob
 # Delfzijl RP
 ensure delfzijlrp_core
 ensure delfzijlrp_shops
+ensure delfzijlrp_crime
