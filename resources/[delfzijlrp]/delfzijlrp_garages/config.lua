@@ -3,6 +3,21 @@ Config = {}
 Config.Debug = false
 Config.UseBlips = true
 Config.Currency = '€'
+Config.TrackBlipDuration = 120000
+
+Config.LockCommand = 'voertuigslot'
+Config.LockKey = 'U'
+
+Config.DutchPlates = {
+    enabled = true,
+    plateIndex = 1,
+    patterns = {
+        '99-XXX-9',
+        'X-999-XX',
+        'XX-999-X',
+        'XXX-99-X'
+    }
+}
 
 Config.PersonalGarages = {
     {
@@ -68,14 +83,17 @@ Config.Text = {
     storeVehicle = 'Voertuig opslaan',
     jobGarage = 'Werkgarage openen',
     noVehicle = 'Je zit niet in een voertuig.',
+    noVehicleNearby = 'Geen voertuig dichtbij gevonden.',
     notOwner = 'Dit voertuig staat niet op jouw naam.',
     stored = 'Voertuig opgeslagen.',
     spawned = 'Voertuig uitgehaald.',
     noVehicles = 'Je hebt geen voertuigen in deze garage.',
     spawnBlocked = 'Spawnplek is geblokkeerd.',
-    noTracker = 'Dit voertuig heeft geen tracker.',
+    noTracker = 'Dit voertuig heeft geen actieve GPS-locatie.',
     trackerInstalled = 'Tracker geïnstalleerd.',
     trackerRemoved = 'Tracker verwijderd.',
     missingTrackerItem = 'Je mist een tracker-item.',
-    missingRemoverItem = 'Je mist een tracker-verwijderaar.'
+    missingRemoverItem = 'Je mist een tracker-verwijderaar.',
+    locked = 'Voertuig vergrendeld.',
+    unlocked = 'Voertuig ontgrendeld.'
 }
