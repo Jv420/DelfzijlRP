@@ -25,6 +25,21 @@ Config.Services = {
     business_check = { label = 'Bedrijfscontrole aanvragen', price = 750 }
 }
 
+Config.Tax = {
+    defaultDueDays = 7,
+    maxAmount = 500000
+}
+
+Config.TaxTypes = {
+    income = 'Inkomstenbelasting',
+    property = 'Onroerendezaakbelasting',
+    vehicle = 'Motorrijtuigenbelasting',
+    business = 'Bedrijfsbelasting',
+    port = 'Havenheffing',
+    fine_admin = 'Gemeentelijke administratiekosten',
+    other = 'Overige gemeentebelasting'
+}
+
 Config.PermitTypes = {
     taxi = 'Taxi vergunning',
     transport = 'Transport vergunning',
@@ -59,6 +74,8 @@ Config.Text = {
     permitUpdated = 'Vergunning bijgewerkt.',
     reportCreated = 'Melding openbare werken ingediend.',
     treasuryUpdated = 'Gemeentekas bijgewerkt.',
+    taxCreated = 'Belastingaanslag aangemaakt.',
+    taxPaid = 'Belastingaanslag betaald.',
     invalidInput = 'Ongeldige invoer.',
     noData = 'Geen gegevens gevonden.'
 }
