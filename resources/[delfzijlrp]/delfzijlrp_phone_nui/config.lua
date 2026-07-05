@@ -4,7 +4,7 @@ Config.Debug = false
 Config.Command = 'phone'
 Config.AltCommand = 'telefoon2'
 Config.PhoneItem = 'phone'
-Config.RequireItem = true
+Config.RequireItem = false
 Config.OpenKey = 'F2'
 
 Config.Brand = {
