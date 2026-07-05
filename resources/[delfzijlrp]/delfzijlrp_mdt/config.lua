@@ -1,7 +1,7 @@
 Config = {}
 
 Config.Debug = false
-Config.Command = 'mdt'
+Config.Command = 'mdtold'
 
 Config.AllowedJobs = {
     police = true,
