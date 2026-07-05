@@ -4,6 +4,10 @@
   "routes": [
     { "src": "/styles.css", "dest": "/styles.css" },
     { "src": "/script.js", "dest": "/script.js" },
+    { "src": "/panel.css", "dest": "/web/control-panel/panel.css" },
+    { "src": "/panel.js", "dest": "/web/control-panel/panel.js" },
+    { "src": "/panel", "dest": "/web/control-panel/index.html" },
+    { "src": "/panel/(.*)", "dest": "/web/control-panel/index.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
