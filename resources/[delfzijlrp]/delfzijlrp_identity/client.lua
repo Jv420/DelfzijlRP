@@ -72,7 +72,7 @@ end
 local function openCityHall()
     lib.registerContext({
         id = 'delfzijlrp_cityhall',
-        title = 'Gemeentehuis Delfzijl',
+        title = 'Burgerzaken Delfzijl',
         options = {
             { title = 'Delfzijl ID aanmaken', description = 'Maak je fictieve burgerprofiel aan', icon = 'user-plus', onSelect = createProfileDialog },
             { title = 'Mijn Delfzijl ID bekijken', icon = 'id-card', onSelect = showProfile },
@@ -86,27 +86,15 @@ end
 CreateThread(function()
     Wait(1500)
 
-    if Config.UseBlip and Config.CityHall.blip then
-        local coords = Config.CityHall.coords
-        local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
-        SetBlipSprite(blip, Config.CityHall.blip.sprite)
-        SetBlipColour(blip, Config.CityHall.blip.color)
-        SetBlipScale(blip, Config.CityHall.blip.scale)
-        SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(Config.CityHall.label)
-        EndTextCommandSetBlipName(blip)
-    end
-
     exports.ox_target:addSphereZone({
         coords = Config.CityHall.coords,
         radius = Config.CityHall.radius,
         debug = Config.Debug,
         options = {
             {
-                name = 'delfzijlrp_cityhall_open',
-                icon = 'fa-solid fa-building-columns',
-                label = Config.Text.openCityHall,
+                name = 'delfzijlrp_identity_cityhall_open',
+                icon = 'fa-solid fa-id-card',
+                label = 'Burgerzaken openen',
                 distance = 2.0,
                 onSelect = openCityHall
             }
@@ -114,4 +102,5 @@ CreateThread(function()
     })
 end)
 
-RegisterCommand('gemeente', openCityHall, false)
+RegisterCommand('idbalie', openCityHall, false)
+RegisterCommand('mijnid', showProfile, false)
