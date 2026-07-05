@@ -1,35 +1,37 @@
 # Delfzijl RP Plate Pack
 
-Deze resource is een placeholder voor Nederlandse gele kentekenplaten.
-
-## Wat deze resource doet
-
-- Houdt kenteken-textures gescheiden van de garage- en vehicledealer-code.
-- Laat je later makkelijk een `.ytd` texturebestand plaatsen in `stream/`.
-- De kentekenlogica zelf staat in `delfzijl_vehicledealer` en `delfzijlrp_garages`.
+Deze resource streamt Nederlandse gele kentekenplaat-textures via `vehshare.ytd`.
 
 ## Belangrijk
 
-GTA/FiveM kentekenplaten zijn afhankelijk van vehicle textures, plate textures en soms vehicle meta. De code kan Nederlandse kentekens genereren zoals `12-ABC-3`, maar de gele plaatkleur komt uit een texture/mod.
+`vehshare.ytd` is een binair GTA/FiveM texture-bestand. Plaats dit bestand hier:
 
-## Installatie later
-
-Plaats je eigen gemaakte of legaal verkregen texturebestand hier:
-
-```text
-resources/[delfzijlrp]/delfzijlrp_platepack/stream/
+```txt
+resources/[delfzijlrp]/delfzijlrp_platepack/stream/vehshare.ytd
 ```
 
-Voorbeeld:
+## Installatie
 
-```text
-stream/vehshare.ytd
+1. Maak deze map aan als hij nog niet bestaat:
+
+```txt
+resources/[delfzijlrp]/delfzijlrp_platepack/stream
 ```
 
-Daarna in `server.cfg`:
+2. Zet je Nederlandse `vehshare.ytd` in de `stream` map.
+
+3. Voeg toe aan `server.cfg`:
 
 ```cfg
 ensure delfzijlrp_platepack
 ```
 
-Commit geen betaalde of niet-gelicentieerde bestanden in een publieke GitHub repo.
+4. Herstart de resource:
+
+```cfg
+restart delfzijlrp_platepack
+```
+
+## Let op
+
+Deze resource verandert alleen het uiterlijk/de texture van de kentekenplaat. De tekst op het kenteken wordt ingesteld door je vehicledealer/garage/RDW scripts.
