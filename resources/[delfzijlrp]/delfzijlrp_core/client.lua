@@ -10,12 +10,14 @@ local function safeSpawnFallback()
     if hasSpawned then return end
     if not exports.spawnmanager then return end
 
+    local spawn = Config.DefaultSpawn or vector4(-1037.72, -2737.87, 20.17, 328.0)
+
     exports.spawnmanager:setAutoSpawn(false)
     exports.spawnmanager:spawnPlayer({
-        x = Config.Spawn.x,
-        y = Config.Spawn.y,
-        z = Config.Spawn.z,
-        heading = Config.Spawn.w or 0.0,
+        x = spawn.x,
+        y = spawn.y,
+        z = spawn.z,
+        heading = spawn.w or 0.0,
         model = `mp_m_freemode_01`,
         skipFade = false
     }, function()
