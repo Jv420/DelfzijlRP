@@ -1,3 +1,5 @@
+local ESX = exports['es_extended']:getSharedObject()
+
 local function notify(message, type)
     lib.notify({ title = 'Delfzijl RP Garage', description = message, type = type or 'inform' })
 end
