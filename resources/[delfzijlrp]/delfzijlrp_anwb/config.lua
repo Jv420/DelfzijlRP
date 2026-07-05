@@ -8,9 +8,9 @@ Config.Stations = {
     {
         id = 'delfzijl_service',
         label = 'ANWB Delfzijl Servicepunt',
-        duty = vector3(-347.65, -133.42, 39.01),
-        storage = vector3(-334.21, -134.72, 39.01),
-        service = vector3(-365.38, -122.01, 38.69),
+        duty = vector3(949.78, -968.21, 39.50),
+        storage = vector3(955.25, -972.58, 39.50),
+        service = vector3(941.64, -975.12, 39.50),
         blip = { sprite = 446, color = 46, scale = 0.75 }
     }
 }
