@@ -1,13 +1,32 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "routes": [
-    { "src": "/styles.css", "dest": "/styles.css" },
-    { "src": "/script.js", "dest": "/script.js" },
-    { "src": "/panel.css", "dest": "/web/control-panel/panel.css" },
-    { "src": "/panel.js", "dest": "/web/control-panel/panel.js" },
-    { "src": "/panel", "dest": "/web/control-panel/index.html" },
-    { "src": "/panel/(.*)", "dest": "/web/control-panel/index.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    {
+      "source": "/panel.css",
+      "destination": "/web/control-panel/panel.css"
+    },
+    {
+      "source": "/panel.js",
+      "destination": "/web/control-panel/panel.js"
+    },
+    {
+      "source": "/panel",
+      "destination": "/web/control-panel/index.html"
+    },
+    {
+      "source": "/panel/:path*",
+      "destination": "/web/control-panel/index.html"
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "fanta.delfzijlrp.nl"
+        }
+      ],
+      "destination": "/web/control-panel/index.html"
+    }
   ]
 }
