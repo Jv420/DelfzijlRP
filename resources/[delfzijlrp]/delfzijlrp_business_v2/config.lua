@@ -7,8 +7,8 @@ Config.CreatePrice = 25000
 
 Config.KvkOffice = {
     label = 'KVK Delfzijl',
-    coords = vector3(-1579.65, -565.82, 108.52),
-    radius = 2.0,
+    coords = vector3(-552.91, -211.26, 37.65),
+    radius = 1.2,
     blip = { sprite = 475, color = 5, scale = 0.75 }
 }
 
@@ -34,8 +34,8 @@ Config.Points = {
     {
         id = 'centrum_office',
         label = 'Bedrijvenbalie Centrum',
-        coords = vector3(-1582.65, -558.82, 108.52),
-        radius = 2.0
+        coords = vector3(-552.91, -211.26, 37.65),
+        radius = 1.2
     },
     {
         id = 'haven_office',
