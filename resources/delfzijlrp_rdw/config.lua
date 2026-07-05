@@ -7,8 +7,8 @@ Config.ItemName = 'kentekenbewijs'
 
 Config.RDWOffice = {
     label = 'RDW Delfzijl',
-    coords = vector3(-42.67, -1098.22, 26.42),
-    radius = 2.0,
+    coords = vector3(-544.91, -211.26, 37.65),
+    radius = 1.2,
     blip = { sprite = 225, color = 46, scale = 0.8 }
 }
 
