@@ -6,6 +6,21 @@ local function closeLoadingScreen()
     DoScreenFadeIn(800)
 end
 
+local function restorePlayerAtSpawn()
+    local ped = PlayerPedId()
+    local spawn = Config.DefaultSpawn or vector4(-1037.72, -2737.87, 20.17, 328.0)
+
+    RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+    SetEntityCoordsNoOffset(ped, spawn.x, spawn.y, spawn.z, false, false, false)
+    SetEntityHeading(ped, spawn.w or 0.0)
+    FreezeEntityPosition(ped, false)
+    SetEntityVisible(ped, true, false)
+    SetEntityInvincible(ped, false)
+    NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.w or 0.0, true, true, false)
+    ClearPedTasksImmediately(ped)
+    closeLoadingScreen()
+end
+
 local function safeSpawnFallback()
     if hasSpawned then return end
 
@@ -21,14 +36,14 @@ local function safeSpawnFallback()
             skipFade = false
         }, function()
             hasSpawned = true
-            closeLoadingScreen()
+            restorePlayerAtSpawn()
             print(('[%s] Spawn fallback uitgevoerd.'):format(Config.ServerName))
         end)
     end)
 
     if not ok then
-        closeLoadingScreen()
-        print(('[%s] Spawn fallback kon spawnmanager niet gebruiken.'):format(Config.ServerName))
+        restorePlayerAtSpawn()
+        print(('[%s] Basis spawn herstel uitgevoerd.'):format(Config.ServerName))
     end
 end
 
