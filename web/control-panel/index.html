@@ -3,54 +3,77 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DRCC Panel | Delfzijl RP</title>
+  <title>Fanta Control Center | Delfzijl RP</title>
   <link rel="stylesheet" href="panel.css">
 </head>
 <body>
-  <main class="wrap">
-    <section class="hero">
-      <div>
-        <p class="eyebrow">Delfzijl RP</p>
-        <h1>Control Panel</h1>
-        <p>Online beheer voor status, stadsberichten en beloningen via je FiveM Control API.</p>
+  <aside class="sidebar">
+    <div class="logo"><span>F</span><div><b>Fanta</b><small>DRCC Online</small></div></div>
+    <button class="tab active" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="players">Spelers</button>
+    <button class="tab" data-tab="gifts">Gifts</button>
+    <button class="tab" data-tab="city">Stad</button>
+    <button class="tab" data-tab="rdw">RDW</button>
+    <button class="tab" data-tab="kvk">KVK</button>
+    <button class="tab" data-tab="kadaster">Kadaster</button>
+    <button class="tab" data-tab="events">Events</button>
+    <button class="tab" data-tab="logs">Logs</button>
+    <button class="tab" data-tab="settings">Instellingen</button>
+    <a class="home" href="/">Homepage</a>
+  </aside>
+
+  <main class="app">
+    <header class="topbar">
+      <div><p class="eyebrow">Delfzijl RP</p><h1>Fanta Control Center</h1></div>
+      <button id="quickStatus">Live status</button>
+    </header>
+
+    <section id="dashboard" class="page active">
+      <div class="stats">
+        <article><span>Online</span><b id="statOnline">-</b></article>
+        <article><span>Max spelers</span><b id="statMax">-</b></article>
+        <article><span>ESX</span><b id="statEsx">-</b></article>
+        <article><span>Inventory</span><b id="statInv">-</b></article>
       </div>
-      <a class="home" href="/">Homepage</a>
+      <div class="grid two">
+        <article class="card"><h2>Serverstatus</h2><button id="loadStatus">Status ophalen</button><pre id="statusBox">Nog geen status geladen.</pre></article>
+        <article class="card"><h2>Snelle acties</h2><button data-jump="city">Stadsbericht</button><button data-jump="gifts">Speler belonen</button><button data-jump="events">Giveaway klaarzetten</button><button data-jump="settings">API instellen</button></article>
+      </div>
     </section>
 
-    <section class="grid">
-      <article class="card">
-        <h2>API instellingen</h2>
-        <label>Server API URL</label>
-        <input id="apiUrl" placeholder="http://jouw-server-ip:30120/drcc">
-        <label>API Key</label>
-        <input id="apiKey" type="password" placeholder="geheime key">
-        <button id="saveSettings">Opslaan</button>
-      </article>
-
-      <article class="card">
-        <h2>Status</h2>
-        <button id="loadStatus">Status ophalen</button>
-        <pre id="statusBox">Nog geen status geladen.</pre>
-      </article>
-
-      <article class="card">
-        <h2>Stadsbericht</h2>
-        <textarea id="announceText" placeholder="Bericht naar alle spelers..."></textarea>
-        <button id="sendAnnounce">Versturen</button>
-      </article>
-
-      <article class="card">
-        <h2>Geld geven</h2>
-        <input id="moneyTarget" placeholder="Speler ID">
-        <select id="moneyAccount"><option value="bank">Bank</option><option value="cash">Contant</option></select>
-        <input id="moneyAmount" type="number" placeholder="Bedrag">
-        <button id="sendMoney">Geef geld</button>
-      </article>
+    <section id="players" class="page">
+      <article class="card"><h2>Online spelers</h2><button id="refreshPlayers">Ververs spelers</button><div id="playersList" class="list">Nog geen spelers geladen.</div></article>
     </section>
 
-    <section class="card logcard">
-      <h2>Panel log</h2>
-      <pre id="logBox">Klaar.</pre>
+    <section id="gifts" class="page">
+      <div class="grid two">
+        <article class="card"><h2>Geld geven</h2><input id="moneyTarget" placeholder="Speler ID"><select id="moneyAccount"><option value="bank">Bank</option><option value="cash">Contant</option></select><input id="moneyAmount" type="number" placeholder="Bedrag"><button id="sendMoney">Geef geld</button><small>Werkt zodra de FiveM API gift-endpoint actief is.</small></article>
+        <article class="card"><h2>Item / voertuig</h2><input id="itemTarget" placeholder="Speler ID"><input id="itemName" placeholder="Item naam, bijv. repairkit"><input id="itemCount" type="number" value="1"><button id="sendItem">Item geven</button><hr><input id="carTarget" placeholder="Speler ID"><input id="carModel" placeholder="Voertuig spawnnaam"><button id="sendCar">Voertuig geven</button></article>
+      </div>
+    </section>
+
+    <section id="city" class="page">
+      <div class="grid two">
+        <article class="card"><h2>Stadsbericht</h2><textarea id="announceText" placeholder="Bericht naar alle spelers..."></textarea><button id="sendAnnounce">Versturen</button></article>
+        <article class="card"><h2>Weer & tijd</h2><select id="weather"><option>CLEAR</option><option>EXTRASUNNY</option><option>CLOUDS</option><option>RAIN</option><option>THUNDER</option><option>FOGGY</option><option>SNOW</option></select><button id="setWeather">Weer instellen</button><input id="timeHour" type="number" min="0" max="23" placeholder="Uur 0-23"><button id="setTime">Tijd instellen</button></article>
+      </div>
+    </section>
+
+    <section id="rdw" class="page"><article class="card"><h2>RDW Beheer</h2><p>Kentekens, APK, verzekering, sleutels en trackers. Deze module is klaar voor de volgende API-koppeling.</p><div class="modules"><span>Kenteken wijzigen</span><span>APK verlengen</span><span>Verzekering</span><span>Sleutels</span><span>Trackers</span></div></article></section>
+    <section id="kvk" class="page"><article class="card"><h2>KVK Beheer</h2><p>Bedrijven aanmaken, eigenaar wijzigen, personeel, salarissen en status.</p><div class="modules"><span>Bedrijf zoeken</span><span>Eigenaar wijzigen</span><span>Salarissen</span><span>Open/sluit bedrijf</span></div></article></section>
+    <section id="kadaster" class="page"><article class="card"><h2>Kadaster Beheer</h2><p>Woningen, bedrijfspanden, verkoop, verhuur en sleutels.</p><div class="modules"><span>Woning zoeken</span><span>Eigenaar geven</span><span>Huurcontract</span><span>Sleutels</span></div></article></section>
+
+    <section id="events" class="page">
+      <div class="grid two">
+        <article class="card"><h2>Giveaway</h2><input id="giveTitle" placeholder="Titel"><input id="givePreset" placeholder="Preset ID, bijv. starter"><input id="giveSeconds" type="number" value="300"><button id="startGiveaway">Start giveaway</button></article>
+        <article class="card"><h2>Event Center</h2><button class="eventBtn">Weekmarkt</button><button class="eventBtn">Kermis</button><button class="eventBtn">DelfSail</button><button class="eventBtn">Carmeet</button></article>
+      </div>
+    </section>
+
+    <section id="logs" class="page"><article class="card"><h2>Panel log</h2><pre id="logBox">Klaar.</pre></article></section>
+
+    <section id="settings" class="page">
+      <article class="card"><h2>API instellingen</h2><label>Server API URL</label><input id="apiUrl" placeholder="http://jouw-server-ip:30120/drcc"><label>API Key</label><input id="apiKey" type="password" placeholder="geheime key"><button id="saveSettings">Opslaan</button><p class="muted">Gebruik tijdelijk je FiveM API-url. Later maken we Discord OAuth-login.</p></article>
     </section>
   </main>
   <script src="panel.js"></script>
