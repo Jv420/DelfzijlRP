@@ -6,8 +6,8 @@ Config.HouseCommand = 'huis'
 
 Config.Office = {
     label = 'Kadaster Delfzijl',
-    coords = vector3(-138.44, -633.91, 168.82),
-    radius = 2.0,
+    coords = vector3(-548.91, -211.26, 37.65),
+    radius = 1.2,
     blip = { sprite = 475, color = 46, scale = 0.75 }
 }
 
