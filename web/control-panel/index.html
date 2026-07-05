@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DRCC Panel | Delfzijl RP</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Delfzijl RP</p>
+        <h1>Control Panel</h1>
+        <p>Online beheer voor status, stadsberichten en beloningen via je FiveM Control API.</p>
+      </div>
+      <a class="home" href="/">Homepage</a>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>API instellingen</h2>
+        <label>Server API URL</label>
+        <input id="apiUrl" placeholder="http://jouw-server-ip:30120/drcc">
+        <label>API Key</label>
+        <input id="apiKey" type="password" placeholder="geheime key">
+        <button id="saveSettings">Opslaan</button>
+      </article>
+
+      <article class="card">
+        <h2>Status</h2>
+        <button id="loadStatus">Status ophalen</button>
+        <pre id="statusBox">Nog geen status geladen.</pre>
+      </article>
+
+      <article class="card">
+        <h2>Stadsbericht</h2>
+        <textarea id="announceText" placeholder="Bericht naar alle spelers..."></textarea>
+        <button id="sendAnnounce">Versturen</button>
+      </article>
+
+      <article class="card">
+        <h2>Geld geven</h2>
+        <input id="moneyTarget" placeholder="Speler ID">
+        <select id="moneyAccount"><option value="bank">Bank</option><option value="cash">Contant</option></select>
+        <input id="moneyAmount" type="number" placeholder="Bedrag">
+        <button id="sendMoney">Geef geld</button>
+      </article>
+    </section>
+
+    <section class="card logcard">
+      <h2>Panel log</h2>
+      <pre id="logBox">Klaar.</pre>
+    </section>
+  </main>
+  <script src="panel.js"></script>
+</body>
+</html>
