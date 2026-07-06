@@ -46,6 +46,33 @@ local function openList()
     lib.showContext('restaurant_list')
 end
 
+local function openKitchen(restId)
+    local rows = lib.callback.await('delfzijlrp_v3_restaurants:server:getOrders', false, restId or '') or {}
+    local opts = {}
+    for _, o in ipairs(rows) do
+        opts[#opts + 1] = {
+            title = '#' .. o.id .. ' ' .. o.label .. ' x' .. tostring(o.amount),
+            description = o.restaurant_id .. ' | ' .. o.player_name .. ' | ' .. o.status,
+            onSelect = function()
+                lib.registerContext({
+                    id = 'restaurant_order_' .. o.id,
+                    title = 'Order #' .. o.id,
+                    menu = 'restaurant_kitchen',
+                    options = {
+                        { title = 'In bereiding zetten', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'preparing') end },
+                        { title = 'Klaar zetten', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'ready') end },
+                        { title = 'Bezorgd/afgegeven', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'delivered') end }
+                    }
+                })
+                lib.showContext('restaurant_order_' .. o.id)
+            end
+        }
+    end
+    if #opts == 0 then opts[1] = { title = 'Geen openstaande bestellingen', readOnly = true } end
+    lib.registerContext({ id = 'restaurant_kitchen', title = 'Keukenscherm', options = opts })
+    lib.showContext('restaurant_kitchen')
+end
+
 CreateThread(function()
     Wait(1500)
     for id, rest in pairs(Config.Restaurants) do
@@ -63,9 +90,18 @@ CreateThread(function()
             coords = rest.coords,
             radius = rest.radius or 2.0,
             debug = Config.Debug,
-            options = {{ name = 'rest_' .. id, label = Config.Text.open .. ' - ' .. rest.label, onSelect = function() openRestaurant(id) end }}
+            options = {
+                { name = 'rest_' .. id, label = Config.Text.open .. ' - ' .. rest.label, onSelect = function() openRestaurant(id) end },
+                { name = 'rest_kitchen_' .. id, label = Config.Text.kitchen .. ' - ' .. rest.label, onSelect = function() openKitchen(id) end }
+            }
         })
     end
 end)
 
 RegisterCommand(Config.Command, openList, false)
+RegisterCommand(Config.KitchenCommand, function()
+    local input = lib.inputDialog('Keukenscherm', {
+        { type = 'input', label = 'Restaurant ID leeg = alles', required = false }
+    })
+    openKitchen(input and input[1] or '')
+end, false)
