@@ -2,17 +2,30 @@ local function request(kind)
     TriggerServerEvent('delfzijlrp_v3_gemeente:server:request', kind)
 end
 
+local function item(title, kind)
+    return { title = title, description = '€' .. Config.Prices[kind], onSelect = function() request(kind) end }
+end
+
 local function openMenu()
     lib.registerContext({
         id = 'drp_gemeente_main',
         title = 'Gemeente Delfzijl',
         options = {
-            { title = 'ID-kaart aanvragen', description = '€' .. Config.Prices.idkaart, onSelect = function() request('idkaart') end },
-            { title = 'Rijbewijs B aanvragen', description = '€' .. Config.Prices.rijbewijs, onSelect = function() request('rijbewijs') end },
-            { title = 'Buskaartje kopen', description = '€' .. Config.Prices.buskaartje, onSelect = function() request('buskaartje') end },
-            { title = 'Visvergunning aanvragen', description = '€' .. Config.Prices.visvergunning, onSelect = function() request('visvergunning') end },
-            { title = 'Werkvergunning aanvragen', description = '€' .. Config.Prices.werkvergunning, onSelect = function() request('werkvergunning') end },
-            { title = 'Uittreksel BRP aanvragen', description = '€' .. Config.Prices.uittreksel, onSelect = function() request('uittreksel') end },
+            item('ID-kaart aanvragen', 'idkaart'),
+            item('Paspoort aanvragen', 'paspoort'),
+            item('Rijbewijs B aanvragen', 'rijbewijs'),
+            item('Motorrijbewijs A aanvragen', 'motorrijbewijs'),
+            item('Vrachtwagenrijbewijs C aanvragen', 'vrachtwagenrijbewijs'),
+            item('Busrijbewijs D aanvragen', 'busrijbewijs'),
+            item('Vaarbewijs aanvragen', 'vaarbewijs'),
+            item('Buskaartje kopen', 'buskaartje'),
+            item('Visvergunning aanvragen', 'visvergunning'),
+            item('Werkvergunning aanvragen', 'werkvergunning'),
+            item('Bouwvergunning aanvragen', 'bouwvergunning'),
+            item('Marktvergunning aanvragen', 'marktvergunning'),
+            item('Uittreksel BRP aanvragen', 'uittreksel'),
+            item('Geboorteakte aanvragen', 'geboorteakte'),
+            item('Verhuisverklaring aanvragen', 'verhuisverklaring'),
             { title = 'Stadsinformatie', description = 'Delfzijl RP Living Netherlands', readOnly = true }
         }
     })
