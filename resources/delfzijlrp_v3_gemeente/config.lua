@@ -12,20 +12,56 @@ Config.Location = {
 
 Config.Prices = {
     idkaart = 150,
+    paspoort = 250,
     rijbewijs = 350,
+    motorrijbewijs = 450,
+    vrachtwagenrijbewijs = 750,
+    busrijbewijs = 700,
+    vaarbewijs = 600,
     buskaartje = 25,
     visvergunning = 250,
     werkvergunning = 500,
-    uittreksel = 200
+    bouwvergunning = 1250,
+    marktvergunning = 400,
+    uittreksel = 200,
+    geboorteakte = 200,
+    verhuisverklaring = 150
 }
 
 Config.Items = {
     idkaart = 'idkaart',
+    paspoort = 'paspoort',
     rijbewijs = 'rijbewijs',
+    motorrijbewijs = 'motorrijbewijs',
+    vrachtwagenrijbewijs = 'vrachtwagenrijbewijs',
+    busrijbewijs = 'busrijbewijs',
+    vaarbewijs = 'vaarbewijs',
     buskaartje = 'buskaartje',
     visvergunning = 'visvergunning',
     werkvergunning = 'werkvergunning',
-    uittreksel = 'uittreksel_brp'
+    bouwvergunning = 'bouwvergunning',
+    marktvergunning = 'marktvergunning',
+    uittreksel = 'uittreksel_brp',
+    geboorteakte = 'geboorteakte',
+    verhuisverklaring = 'verhuisverklaring'
+}
+
+Config.Labels = {
+    idkaart = 'ID-kaart',
+    paspoort = 'Paspoort',
+    rijbewijs = 'Rijbewijs B',
+    motorrijbewijs = 'Motorrijbewijs A',
+    vrachtwagenrijbewijs = 'Vrachtwagenrijbewijs C',
+    busrijbewijs = 'Busrijbewijs D',
+    vaarbewijs = 'Vaarbewijs',
+    buskaartje = 'Buskaartje',
+    visvergunning = 'Visvergunning',
+    werkvergunning = 'Werkvergunning',
+    bouwvergunning = 'Bouwvergunning',
+    marktvergunning = 'Marktvergunning',
+    uittreksel = 'Uittreksel BRP',
+    geboorteakte = 'Geboorteakte',
+    verhuisverklaring = 'Verhuisverklaring'
 }
 
 Config.Text = {
