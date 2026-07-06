@@ -36,6 +36,7 @@ local function buildStatus()
         players[#players + 1] = {
             id = sid,
             name = GetPlayerName(sid),
+            identifier = xPlayer and xPlayer.identifier or '',
             job = xPlayer and xPlayer.job and xPlayer.job.name or 'unknown'
         }
     end
@@ -48,10 +49,31 @@ local function buildStatus()
             es_extended = GetResourceState('es_extended'),
             ox_inventory = GetResourceState('ox_inventory'),
             oxmysql = GetResourceState('oxmysql'),
-            controlcenter = GetResourceState('delfzijlrp_v3_controlcenter')
+            controlcenter = GetResourceState('delfzijlrp_v3_controlcenter'),
+            fanta_inbox = GetResourceState('delfzijlrp_v3_fanta_inbox')
         },
         players = players
     }
+end
+
+local function getOnlinePlayer(id)
+    id = tonumber(id)
+    if not id then return nil end
+    return ESX.GetPlayerFromId(id)
+end
+
+local function queueReward(targetId, rewardType, rewardData)
+    local xPlayer = getOnlinePlayer(targetId)
+    if not xPlayer then return false, 'player not online' end
+    if GetResourceState('delfzijlrp_v3_fanta_inbox') ~= 'started' then return false, 'fanta inbox not started' end
+    local queueId = exports['delfzijlrp_v3_fanta_inbox']:CreateFantaQueue(
+        xPlayer.identifier,
+        GetPlayerName(xPlayer.source),
+        rewardType,
+        rewardData,
+        'fanta-web'
+    )
+    return true, queueId
 end
 
 SetHttpHandler(function(req, res)
@@ -77,6 +99,32 @@ SetHttpHandler(function(req, res)
                 duration = 12000
             })
             send(res, 200, { ok = true, message = 'announcement sent' })
+        end)
+        return
+    end
+
+    if path == '/drcc/queue/money' and method == 'POST' then
+        readJson(req, function(body)
+            local targetId = tonumber(body.targetId)
+            local amount = tonumber(body.amount) or 0
+            local account = body.account == 'cash' and 'cash' or 'bank'
+            if not targetId or amount <= 0 then send(res, 400, { ok = false, error = 'invalid data' }) return end
+            local ok, result = queueReward(targetId, 'money', { amount = amount, account = account })
+            if not ok then send(res, 400, { ok = false, error = result }) return end
+            send(res, 200, { ok = true, queue_id = result, status = 'pending_approval' })
+        end)
+        return
+    end
+
+    if path == '/drcc/queue/item' and method == 'POST' then
+        readJson(req, function(body)
+            local targetId = tonumber(body.targetId)
+            local item = tostring(body.item or '')
+            local count = tonumber(body.count) or 1
+            if not targetId or item == '' or count < 1 then send(res, 400, { ok = false, error = 'invalid data' }) return end
+            local ok, result = queueReward(targetId, 'item', { item = item, count = count })
+            if not ok then send(res, 400, { ok = false, error = result }) return end
+            send(res, 200, { ok = true, queue_id = result, status = 'pending_approval' })
         end)
         return
     end
