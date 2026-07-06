@@ -1,0 +1,9 @@
+{
+  "name": "fanta-control-panel",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "mysql2": "latest"
+  }
+}
