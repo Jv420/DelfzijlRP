@@ -16,8 +16,11 @@ CreateThread(function()
         price int NOT NULL DEFAULT 0,
         status varchar(32) NOT NULL DEFAULT 'paid',
         created_at timestamp NOT NULL DEFAULT current_timestamp(),
+        updated_at timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
         PRIMARY KEY(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
+
+    MySQL.query.await([[ALTER TABLE delfzijlrp_restaurant_orders ADD COLUMN IF NOT EXISTS updated_at timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp();]])
 
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS delfzijlrp_restaurant_reviews (
         id int NOT NULL AUTO_INCREMENT,
@@ -74,11 +77,11 @@ RegisterNetEvent('delfzijlrp_v3_restaurants:server:buy', function(restId, item, 
     local businessId = rest.business or restId
     MySQL.update.await('UPDATE delfzijlrp_businesses SET balance = balance + ?, turnover = turnover + ? WHERE id = ?', { total, total, businessId })
     MySQL.update.await('UPDATE delfzijlrp_business_stock SET amount = GREATEST(amount - ?, 0) WHERE business_id = ? AND item = ?', { count, businessId, product.item })
-    MySQL.insert.await('INSERT INTO delfzijlrp_restaurant_orders (restaurant_id, identifier, player_name, item, label, amount, price, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', {
+    local orderId = MySQL.insert.await('INSERT INTO delfzijlrp_restaurant_orders (restaurant_id, identifier, player_name, item, label, amount, price, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', {
         restId, xPlayer.identifier, GetPlayerName(src), product.item, product.label, count, total, 'paid'
     })
-    exports['delfzijlrp_v3_business_core']:AddLog(businessId, 'sale', total, product.label .. ' x' .. count, GetPlayerName(src))
-    notify(src, Config.Text.bought, 'success')
+    exports['delfzijlrp_v3_business_core']:AddLog(businessId, 'sale', total, product.label .. ' x' .. count .. ' order #' .. tostring(orderId), GetPlayerName(src))
+    notify(src, Config.Text.bought .. ' Order #' .. tostring(orderId), 'success')
 end)
 
 RegisterNetEvent('delfzijlrp_v3_restaurants:server:review', function(restId, rating, text)
@@ -95,4 +98,26 @@ end)
 
 lib.callback.register('delfzijlrp_v3_restaurants:server:getReviews', function(source, restId)
     return MySQL.query.await('SELECT player_name, rating, text, created_at FROM delfzijlrp_restaurant_reviews WHERE restaurant_id = ? ORDER BY id DESC LIMIT 10', { restId }) or {}
+end)
+
+lib.callback.register('delfzijlrp_v3_restaurants:server:getOrders', function(source, restId)
+    if restId and restId ~= '' then
+        return MySQL.query.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE restaurant_id = ? AND status IN (?, ?) ORDER BY id ASC LIMIT 50', { restId, 'paid', 'preparing' }) or {}
+    end
+    return MySQL.query.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE status IN (?, ?) ORDER BY id ASC LIMIT 50', { 'paid', 'preparing' }) or {}
+end)
+
+RegisterNetEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', function(orderId, status)
+    local src = source
+    orderId = tonumber(orderId)
+    status = tostring(status or '')
+    local allowed = { preparing = true, ready = true, delivered = true }
+    if not orderId or not allowed[status] then notify(src, Config.Text.invalid, 'error') return end
+    local row = MySQL.single.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE id = ? LIMIT 1', { orderId })
+    if not row then notify(src, Config.Text.invalid, 'error') return end
+    MySQL.update.await('UPDATE delfzijlrp_restaurant_orders SET status = ? WHERE id = ?', { status, orderId })
+    local rest = Config.Restaurants[row.restaurant_id]
+    local businessId = rest and (rest.business or row.restaurant_id) or row.restaurant_id
+    exports['delfzijlrp_v3_business_core']:AddLog(businessId, 'order_' .. status, row.price or 0, row.label .. ' #' .. orderId, GetPlayerName(src))
+    notify(src, Config.Text.updated or 'Order bijgewerkt.', 'success')
 end)
