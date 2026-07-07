@@ -19,17 +19,25 @@ local function openStockEdit(businessId, stock)
     if input then TriggerServerEvent('delfzijlrp_v3_business_manager:server:setStockPrice', businessId, stock.item, input[1]) end
 end
 
+local function money(value)
+    return '€' .. tostring(value or 0)
+end
+
 local function showDashboard(businessId)
     local data = lib.callback.await('delfzijlrp_v3_business_manager:server:getDashboard', false, businessId)
     if not data then return end
     local b = data.business
+    local stats = data.stats or {}
 
     local opts = {
-        { title = 'Saldo', description = '€' .. tostring(b.balance or 0), readOnly = true },
-        { title = 'Totale omzet', description = '€' .. tostring(b.turnover or 0), readOnly = true },
-        { title = 'Omzet vandaag', description = '€' .. tostring(data.sales.today or 0), readOnly = true },
-        { title = 'Omzet deze week', description = '€' .. tostring(data.sales.week or 0), readOnly = true },
-        { title = 'Omzet deze maand', description = '€' .. tostring(data.sales.month or 0), readOnly = true }
+        { title = 'Saldo', description = money(b.balance), readOnly = true },
+        { title = 'Totale omzet', description = money(b.turnover), readOnly = true },
+        { title = 'Omzet vandaag', description = money(data.sales.today), readOnly = true },
+        { title = 'Omzet deze week', description = money(data.sales.week), readOnly = true },
+        { title = 'Omzet deze maand', description = money(data.sales.month), readOnly = true },
+        { title = 'Personeel actief/totaal', description = tostring(stats.active_shifts or 0) .. ' in dienst | ' .. tostring(stats.employee_count or 0) .. ' medewerkers', readOnly = true },
+        { title = 'Open orders', description = tostring(stats.open_orders or 0), readOnly = true },
+        { title = 'Reviews', description = tostring(stats.review_average or 0) .. '/5 uit ' .. tostring(stats.review_count or 0) .. ' reviews', readOnly = true }
     }
 
     opts[#opts + 1] = { title = '--- Personeel ---', readOnly = true }
