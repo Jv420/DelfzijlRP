@@ -61,7 +61,7 @@ local function openKitchen(restId)
                     options = {
                         { title = 'In bereiding zetten', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'preparing') end },
                         { title = 'Klaar zetten', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'ready') end },
-                        { title = 'Bezorgd/afgegeven', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'delivered') end }
+                        { title = 'Afgegeven zonder bezorger', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'delivered') end }
                     }
                 })
                 lib.showContext('restaurant_order_' .. o.id)
@@ -71,6 +71,33 @@ local function openKitchen(restId)
     if #opts == 0 then opts[1] = { title = 'Geen openstaande bestellingen', readOnly = true } end
     lib.registerContext({ id = 'restaurant_kitchen', title = 'Keukenscherm', options = opts })
     lib.showContext('restaurant_kitchen')
+end
+
+local function openDelivery()
+    local rows = lib.callback.await('delfzijlrp_v3_restaurants:server:getDeliveries', false) or {}
+    local opts = {}
+    for _, o in ipairs(rows) do
+        local isPicked = o.status == 'picked_up'
+        opts[#opts + 1] = {
+            title = '#' .. o.id .. ' ' .. o.label .. ' x' .. tostring(o.amount),
+            description = o.restaurant_id .. ' | klant: ' .. o.player_name .. ' | status: ' .. o.status,
+            onSelect = function()
+                lib.registerContext({
+                    id = 'restaurant_delivery_' .. o.id,
+                    title = 'Bezorging #' .. o.id,
+                    menu = 'restaurant_delivery',
+                    options = {
+                        { title = 'Aannemen/ophalen', disabled = isPicked, onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:claimDelivery', o.id) end },
+                        { title = 'Afleveren', disabled = not isPicked, onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:finishDelivery', o.id) end }
+                    }
+                })
+                lib.showContext('restaurant_delivery_' .. o.id)
+            end
+        }
+    end
+    if #opts == 0 then opts[1] = { title = 'Geen bezorgingen beschikbaar', readOnly = true } end
+    lib.registerContext({ id = 'restaurant_delivery', title = 'Bezorgingen', options = opts })
+    lib.showContext('restaurant_delivery')
 end
 
 CreateThread(function()
@@ -92,7 +119,8 @@ CreateThread(function()
             debug = Config.Debug,
             options = {
                 { name = 'rest_' .. id, label = Config.Text.open .. ' - ' .. rest.label, onSelect = function() openRestaurant(id) end },
-                { name = 'rest_kitchen_' .. id, label = Config.Text.kitchen .. ' - ' .. rest.label, onSelect = function() openKitchen(id) end }
+                { name = 'rest_kitchen_' .. id, label = Config.Text.kitchen .. ' - ' .. rest.label, onSelect = function() openKitchen(id) end },
+                { name = 'rest_delivery_' .. id, label = Config.Text.delivery .. ' - ' .. rest.label, onSelect = openDelivery }
             }
         })
     end
@@ -105,3 +133,4 @@ RegisterCommand(Config.KitchenCommand, function()
     })
     openKitchen(input and input[1] or '')
 end, false)
+RegisterCommand(Config.DeliveryCommand, openDelivery, false)
