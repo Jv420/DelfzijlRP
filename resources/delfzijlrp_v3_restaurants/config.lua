@@ -2,7 +2,9 @@ Config = {}
 
 Config.Command = 'restaurant'
 Config.KitchenCommand = 'keuken'
+Config.DeliveryCommand = 'bezorging'
 Config.Debug = false
+Config.DeliveryFee = 25
 
 Config.Restaurants = {
     alanya = {
@@ -97,5 +99,8 @@ Config.Text = {
     orderCreated = 'Bestelling aangemaakt.',
     orderReady = 'Bestelling staat klaar.',
     kitchen = 'Keukenscherm',
-    delivered = 'Bestelling bezorgd.'
+    delivered = 'Bestelling bezorgd.',
+    delivery = 'Bezorging',
+    accepted = 'Bezorging aangenomen.',
+    completed = 'Bezorging afgerond.'
 }
