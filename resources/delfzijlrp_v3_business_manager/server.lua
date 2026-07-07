@@ -4,15 +4,32 @@ local function notify(src, text, kind)
     TriggerClientEvent('ox_lib:notify', src, { title = 'Business Manager', description = text, type = kind or 'inform' })
 end
 
+local function cleanId(id)
+    return tostring(id or ''):lower():gsub('%s+', '')
+end
+
 local function hasManagementAccess(src, businessId)
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return false end
+    businessId = cleanId(businessId)
+
+    if GetResourceState('delfzijlrp_v3_business_core') == 'started' then
+        local ok, allowed = pcall(function()
+            return exports['delfzijlrp_v3_business_core']:HasBusinessPermission(xPlayer.identifier, businessId, Config.AllowedRoles)
+        end)
+        if ok then return allowed == true end
+    end
+
     local emp = exports['delfzijlrp_v3_jobs_core']:GetEmployee(xPlayer.identifier, businessId)
     return emp and Config.AllowedRoles[emp.role] == true
 end
 
 local function getBusiness(businessId)
-    return exports['delfzijlrp_v3_business_core']:GetBusiness(businessId)
+    return exports['delfzijlrp_v3_business_core']:GetBusiness(cleanId(businessId))
+end
+
+local function logBusiness(businessId, action, amount, details, by)
+    return exports['delfzijlrp_v3_business_core']:AddLog(cleanId(businessId), action, amount or 0, details or '', by or 'system')
 end
 
 lib.callback.register('delfzijlrp_v3_business_manager:server:getMyBusinesses', function(source)
@@ -26,7 +43,7 @@ lib.callback.register('delfzijlrp_v3_business_manager:server:getMyBusinesses', f
 end)
 
 lib.callback.register('delfzijlrp_v3_business_manager:server:getDashboard', function(source, businessId)
-    businessId = tostring(businessId or ''):lower()
+    businessId = cleanId(businessId)
     if not hasManagementAccess(source, businessId) then notify(source, Config.Text.noAccess, 'error') return nil end
 
     local business = getBusiness(businessId)
@@ -41,6 +58,9 @@ lib.callback.register('delfzijlrp_v3_business_manager:server:getDashboard', func
     local today = MySQL.single.await("SELECT COALESCE(SUM(amount),0) AS total FROM delfzijlrp_business_logs WHERE business_id = ? AND action = 'sale' AND DATE(created_at) = CURDATE()", { businessId })
     local week = MySQL.single.await("SELECT COALESCE(SUM(amount),0) AS total FROM delfzijlrp_business_logs WHERE business_id = ? AND action = 'sale' AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)", { businessId })
     local month = MySQL.single.await("SELECT COALESCE(SUM(amount),0) AS total FROM delfzijlrp_business_logs WHERE business_id = ? AND action = 'sale' AND YEAR(created_at) = YEAR(CURDATE()) AND MONTH(created_at) = MONTH(CURDATE())", { businessId })
+    local activeShifts = MySQL.single.await("SELECT COUNT(*) AS total FROM delfzijlrp_jobs_shifts WHERE business_id = ? AND status = 'active'", { businessId })
+    local openOrders = MySQL.single.await("SELECT COUNT(*) AS total FROM delfzijlrp_restaurant_orders WHERE restaurant_id = ? AND status IN ('paid','preparing','ready','picked_up')", { businessId })
+    local avgReview = MySQL.single.await('SELECT COALESCE(AVG(rating),0) AS avg_rating, COUNT(*) AS total FROM delfzijlrp_restaurant_reviews WHERE restaurant_id = ?', { businessId })
 
     return {
         business = business,
@@ -54,30 +74,37 @@ lib.callback.register('delfzijlrp_v3_business_manager:server:getDashboard', func
             today = tonumber(today and today.total or 0) or 0,
             week = tonumber(week and week.total or 0) or 0,
             month = tonumber(month and month.total or 0) or 0
+        },
+        stats = {
+            employee_count = #employees,
+            active_shifts = tonumber(activeShifts and activeShifts.total or 0) or 0,
+            open_orders = tonumber(openOrders and openOrders.total or 0) or 0,
+            review_average = tonumber(avgReview and avgReview.avg_rating or 0) or 0,
+            review_count = tonumber(avgReview and avgReview.total or 0) or 0
         }
     }
 end)
 
 RegisterNetEvent('delfzijlrp_v3_business_manager:server:setEmployeeRole', function(businessId, identifier, role, payPerMinute)
     local src = source
-    businessId = tostring(businessId or ''):lower()
+    businessId = cleanId(businessId)
     if not hasManagementAccess(src, businessId) then notify(src, Config.Text.noAccess, 'error') return end
     role = tostring(role or 'employee')
     payPerMinute = tonumber(payPerMinute) or 35
     MySQL.update.await('UPDATE delfzijlrp_jobs_employees SET role = ?, pay_per_minute = ? WHERE business_id = ? AND identifier = ?', {
         role, payPerMinute, businessId, identifier
     })
-    exports['delfzijlrp_v3_business_core']:AddLog(businessId, 'employee_update', payPerMinute, identifier .. ' -> ' .. role, GetPlayerName(src))
+    logBusiness(businessId, 'employee_update', payPerMinute, identifier .. ' -> ' .. role, GetPlayerName(src))
     notify(src, Config.Text.updated, 'success')
 end)
 
 RegisterNetEvent('delfzijlrp_v3_business_manager:server:setStockPrice', function(businessId, item, price)
     local src = source
-    businessId = tostring(businessId or ''):lower()
+    businessId = cleanId(businessId)
     if not hasManagementAccess(src, businessId) then notify(src, Config.Text.noAccess, 'error') return end
     price = tonumber(price) or 0
     if tostring(item or '') == '' or price < 0 then notify(src, Config.Text.invalid, 'error') return end
     MySQL.update.await('UPDATE delfzijlrp_business_stock SET price = ? WHERE business_id = ? AND item = ?', { price, businessId, item })
-    exports['delfzijlrp_v3_business_core']:AddLog(businessId, 'stock_price', price, item, GetPlayerName(src))
+    logBusiness(businessId, 'stock_price', price, item, GetPlayerName(src))
     notify(src, Config.Text.updated, 'success')
 end)
