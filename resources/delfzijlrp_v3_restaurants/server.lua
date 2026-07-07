@@ -22,7 +22,6 @@ CreateThread(function()
         updated_at timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
         PRIMARY KEY(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
-
     MySQL.query.await([[ALTER TABLE delfzijlrp_restaurant_orders ADD COLUMN IF NOT EXISTS courier_identifier varchar(64) DEFAULT NULL;]])
     MySQL.query.await([[ALTER TABLE delfzijlrp_restaurant_orders ADD COLUMN IF NOT EXISTS courier_name varchar(128) DEFAULT NULL;]])
     MySQL.query.await([[ALTER TABLE delfzijlrp_restaurant_orders ADD COLUMN IF NOT EXISTS delivery_fee int NOT NULL DEFAULT 0;]])
@@ -39,28 +38,53 @@ CreateThread(function()
         PRIMARY KEY(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS delfzijlrp_restaurant_stock (
+        id int NOT NULL AUTO_INCREMENT,
+        restaurant_id varchar(64) NOT NULL,
+        ingredient varchar(64) NOT NULL,
+        amount int NOT NULL DEFAULT 0,
+        minimum int NOT NULL DEFAULT 10,
+        PRIMARY KEY(id),
+        UNIQUE KEY rest_ing (restaurant_id, ingredient)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
+
     for id, r in pairs(Config.Restaurants) do
-        MySQL.insert.await('INSERT IGNORE INTO delfzijlrp_businesses (id, label, type, balance, tax_rate) VALUES (?, ?, ?, ?, ?)', {
-            r.business or id, r.label, 'horeca', 0, 21
-        })
+        MySQL.insert.await('INSERT IGNORE INTO delfzijlrp_businesses (id, label, type, balance, tax_rate) VALUES (?, ?, ?, ?, ?)', { r.business or id, r.label, 'horeca', 0, 21 })
         for _, p in ipairs(r.menu or {}) do
-            MySQL.insert.await('INSERT IGNORE INTO delfzijlrp_business_stock (business_id, item, label, amount, price) VALUES (?, ?, ?, ?, ?)', {
-                r.business or id, p.item, p.label, 999, p.price
-            })
+            MySQL.insert.await('INSERT IGNORE INTO delfzijlrp_business_stock (business_id, item, label, amount, price) VALUES (?, ?, ?, ?, ?)', { r.business or id, p.item, p.label, 999, p.price })
+        end
+        for item, recipe in pairs(Config.Recipes or {}) do
+            for ingredient, _ in pairs(recipe) do
+                MySQL.insert.await('INSERT IGNORE INTO delfzijlrp_restaurant_stock (restaurant_id, ingredient, amount, minimum) VALUES (?, ?, ?, ?)', { id, ingredient, Config.DefaultIngredientStock or 250, 10 })
+            end
         end
     end
 end)
 
 local function getProduct(rest, item)
-    for _, p in ipairs(rest.menu or {}) do
-        if p.item == item then return p end
-    end
+    for _, p in ipairs(rest.menu or {}) do if p.item == item then return p end end
     return nil
 end
 
 local function businessId(restId)
     local rest = Config.Restaurants[restId]
     return rest and (rest.business or restId) or restId
+end
+
+local function hasStock(restId, item, count)
+    local recipe = (Config.Recipes or {})[item] or {}
+    for ingredient, need in pairs(recipe) do
+        local row = MySQL.single.await('SELECT amount FROM delfzijlrp_restaurant_stock WHERE restaurant_id = ? AND ingredient = ? LIMIT 1', { restId, ingredient })
+        if not row or tonumber(row.amount or 0) < (tonumber(need) or 0) * count then return false, ingredient end
+    end
+    return true
+end
+
+local function useStock(restId, item, count)
+    local recipe = (Config.Recipes or {})[item] or {}
+    for ingredient, need in pairs(recipe) do
+        MySQL.update.await('UPDATE delfzijlrp_restaurant_stock SET amount = GREATEST(amount - ?, 0) WHERE restaurant_id = ? AND ingredient = ?', { (tonumber(need) or 0) * count, restId, ingredient })
+    end
 end
 
 RegisterNetEvent('delfzijlrp_v3_restaurants:server:buy', function(restId, item, count)
@@ -72,6 +96,8 @@ RegisterNetEvent('delfzijlrp_v3_restaurants:server:buy', function(restId, item, 
     local product = getProduct(rest, item)
     count = tonumber(count) or 1
     if not product or count < 1 then notify(src, Config.Text.invalid, 'error') return end
+    local enough, missing = hasStock(restId, product.item, count)
+    if not enough then notify(src, Config.Text.noStock .. ' (' .. tostring(missing) .. ')', 'error') return end
 
     local total = product.price * count
     if xPlayer.getMoney() < total then notify(src, Config.Text.noMoney, 'error') return end
@@ -79,18 +105,13 @@ RegisterNetEvent('delfzijlrp_v3_restaurants:server:buy', function(restId, item, 
 
     xPlayer.removeMoney(total)
     local ok, reason = exports.ox_inventory:AddItem(src, product.item, count)
-    if not ok then
-        xPlayer.addMoney(total)
-        notify(src, reason or Config.Text.invalid, 'error')
-        return
-    end
+    if not ok then xPlayer.addMoney(total) notify(src, reason or Config.Text.invalid, 'error') return end
 
+    useStock(restId, product.item, count)
     local bid = businessId(restId)
     MySQL.update.await('UPDATE delfzijlrp_businesses SET balance = balance + ?, turnover = turnover + ? WHERE id = ?', { total, total, bid })
     MySQL.update.await('UPDATE delfzijlrp_business_stock SET amount = GREATEST(amount - ?, 0) WHERE business_id = ? AND item = ?', { count, bid, product.item })
-    local orderId = MySQL.insert.await('INSERT INTO delfzijlrp_restaurant_orders (restaurant_id, identifier, player_name, item, label, amount, price, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', {
-        restId, xPlayer.identifier, GetPlayerName(src), product.item, product.label, count, total, 'paid'
-    })
+    local orderId = MySQL.insert.await('INSERT INTO delfzijlrp_restaurant_orders (restaurant_id, identifier, player_name, item, label, amount, price, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', { restId, xPlayer.identifier, GetPlayerName(src), product.item, product.label, count, total, 'paid' })
     exports['delfzijlrp_v3_business_core']:AddLog(bid, 'sale', total, product.label .. ' x' .. count .. ' order #' .. tostring(orderId), GetPlayerName(src))
     notify(src, Config.Text.bought .. ' Order #' .. tostring(orderId), 'success')
 end)
@@ -101,9 +122,7 @@ RegisterNetEvent('delfzijlrp_v3_restaurants:server:review', function(restId, rat
     if not xPlayer then return end
     if not Config.Restaurants[restId] then notify(src, Config.Text.invalid, 'error') return end
     rating = math.max(1, math.min(5, tonumber(rating) or 5))
-    MySQL.insert.await('INSERT INTO delfzijlrp_restaurant_reviews (restaurant_id, identifier, player_name, rating, text) VALUES (?, ?, ?, ?, ?)', {
-        restId, xPlayer.identifier, GetPlayerName(src), rating, tostring(text or '')
-    })
+    MySQL.insert.await('INSERT INTO delfzijlrp_restaurant_reviews (restaurant_id, identifier, player_name, rating, text) VALUES (?, ?, ?, ?, ?)', { restId, xPlayer.identifier, GetPlayerName(src), rating, tostring(text or '') })
     notify(src, 'Review opgeslagen.', 'success')
 end)
 
@@ -112,9 +131,7 @@ lib.callback.register('delfzijlrp_v3_restaurants:server:getReviews', function(so
 end)
 
 lib.callback.register('delfzijlrp_v3_restaurants:server:getOrders', function(source, restId)
-    if restId and restId ~= '' then
-        return MySQL.query.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE restaurant_id = ? AND status IN (?, ?) ORDER BY id ASC LIMIT 50', { restId, 'paid', 'preparing' }) or {}
-    end
+    if restId and restId ~= '' then return MySQL.query.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE restaurant_id = ? AND status IN (?, ?) ORDER BY id ASC LIMIT 50', { restId, 'paid', 'preparing' }) or {} end
     return MySQL.query.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE status IN (?, ?) ORDER BY id ASC LIMIT 50', { 'paid', 'preparing' }) or {}
 end)
 
@@ -122,10 +139,22 @@ lib.callback.register('delfzijlrp_v3_restaurants:server:getDeliveries', function
     return MySQL.query.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE status IN (?, ?) ORDER BY id ASC LIMIT 50', { 'ready', 'picked_up' }) or {}
 end)
 
+lib.callback.register('delfzijlrp_v3_restaurants:server:getStock', function(source, restId)
+    return MySQL.query.await('SELECT ingredient, amount, minimum FROM delfzijlrp_restaurant_stock WHERE restaurant_id = ? ORDER BY ingredient ASC', { restId }) or {}
+end)
+
+RegisterNetEvent('delfzijlrp_v3_restaurants:server:addStock', function(restId, ingredient, amount)
+    local src = source
+    amount = tonumber(amount) or 0
+    if not Config.Restaurants[restId] or tostring(ingredient or '') == '' or amount < 1 then notify(src, Config.Text.invalid, 'error') return end
+    MySQL.insert.await('INSERT INTO delfzijlrp_restaurant_stock (restaurant_id, ingredient, amount, minimum) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount)', { restId, ingredient, amount, 10 })
+    exports['delfzijlrp_v3_business_core']:AddLog(businessId(restId), 'stock_add', amount, ingredient, GetPlayerName(src))
+    notify(src, Config.Text.stockAdded, 'success')
+end)
+
 RegisterNetEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', function(orderId, status)
     local src = source
-    orderId = tonumber(orderId)
-    status = tostring(status or '')
+    orderId = tonumber(orderId); status = tostring(status or '')
     local allowed = { preparing = true, ready = true, delivered = true }
     if not orderId or not allowed[status] then notify(src, Config.Text.invalid, 'error') return end
     local row = MySQL.single.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE id = ? LIMIT 1', { orderId })
@@ -142,9 +171,7 @@ RegisterNetEvent('delfzijlrp_v3_restaurants:server:claimDelivery', function(orde
     orderId = tonumber(orderId)
     local row = MySQL.single.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE id = ? LIMIT 1', { orderId })
     if not row or row.status ~= 'ready' then notify(src, Config.Text.invalid, 'error') return end
-    MySQL.update.await('UPDATE delfzijlrp_restaurant_orders SET status = ?, courier_identifier = ?, courier_name = ?, delivery_fee = ? WHERE id = ?', {
-        'picked_up', xPlayer.identifier, GetPlayerName(src), Config.DeliveryFee or 25, orderId
-    })
+    MySQL.update.await('UPDATE delfzijlrp_restaurant_orders SET status = ?, courier_identifier = ?, courier_name = ?, delivery_fee = ? WHERE id = ?', { 'picked_up', xPlayer.identifier, GetPlayerName(src), Config.DeliveryFee or 25, orderId })
     exports['delfzijlrp_v3_business_core']:AddLog(businessId(row.restaurant_id), 'delivery_claim', Config.DeliveryFee or 25, row.label .. ' #' .. orderId, GetPlayerName(src))
     notify(src, Config.Text.accepted, 'success')
 end)
