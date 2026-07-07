@@ -22,5 +22,6 @@ dependencies {
     'oxmysql',
     'ox_inventory',
     'es_extended',
-    'delfzijlrp_v3_business_core'
+    'delfzijlrp_v3_business_core',
+    'delfzijlrp_v3_jobs_core'
 }
