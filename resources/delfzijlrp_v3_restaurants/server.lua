@@ -4,6 +4,21 @@ local function notify(src, text, kind)
     TriggerClientEvent('ox_lib:notify', src, { title = 'Restaurants', description = text, type = kind or 'inform' })
 end
 
+local function businessId(restId)
+    local rest = Config.Restaurants[restId]
+    return rest and (rest.business or restId) or restId
+end
+
+local function hasJobAccess(src, restId, allowedRoles)
+    local xPlayer = ESX.GetPlayerFromId(src)
+    if not xPlayer then return false end
+    if GetResourceState('delfzijlrp_v3_jobs_core') ~= 'started' then return true end
+    local emp = exports['delfzijlrp_v3_jobs_core']:GetEmployee(xPlayer.identifier, businessId(restId))
+    if not emp then return false end
+    if not allowedRoles then return true end
+    return allowedRoles[emp.role] == true
+end
+
 CreateThread(function()
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS delfzijlrp_restaurant_orders (
         id int NOT NULL AUTO_INCREMENT,
@@ -53,7 +68,7 @@ CreateThread(function()
         for _, p in ipairs(r.menu or {}) do
             MySQL.insert.await('INSERT IGNORE INTO delfzijlrp_business_stock (business_id, item, label, amount, price) VALUES (?, ?, ?, ?, ?)', { r.business or id, p.item, p.label, 999, p.price })
         end
-        for item, recipe in pairs(Config.Recipes or {}) do
+        for _, recipe in pairs(Config.Recipes or {}) do
             for ingredient, _ in pairs(recipe) do
                 MySQL.insert.await('INSERT IGNORE INTO delfzijlrp_restaurant_stock (restaurant_id, ingredient, amount, minimum) VALUES (?, ?, ?, ?)', { id, ingredient, Config.DefaultIngredientStock or 250, 10 })
             end
@@ -64,11 +79,6 @@ end)
 local function getProduct(rest, item)
     for _, p in ipairs(rest.menu or {}) do if p.item == item then return p end end
     return nil
-end
-
-local function businessId(restId)
-    local rest = Config.Restaurants[restId]
-    return rest and (rest.business or restId) or restId
 end
 
 local function hasStock(restId, item, count)
@@ -131,21 +141,33 @@ lib.callback.register('delfzijlrp_v3_restaurants:server:getReviews', function(so
 end)
 
 lib.callback.register('delfzijlrp_v3_restaurants:server:getOrders', function(source, restId)
+    if restId and restId ~= '' and not hasJobAccess(source, restId) then notify(source, Config.Text.noAccess or 'Geen toegang.', 'error') return {} end
     if restId and restId ~= '' then return MySQL.query.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE restaurant_id = ? AND status IN (?, ?) ORDER BY id ASC LIMIT 50', { restId, 'paid', 'preparing' }) or {} end
     return MySQL.query.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE status IN (?, ?) ORDER BY id ASC LIMIT 50', { 'paid', 'preparing' }) or {}
 end)
 
 lib.callback.register('delfzijlrp_v3_restaurants:server:getDeliveries', function(source)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if GetResourceState('delfzijlrp_v3_jobs_core') == 'started' and xPlayer then
+        local allowed = false
+        for id, _ in pairs(Config.Restaurants) do
+            local emp = exports['delfzijlrp_v3_jobs_core']:GetEmployee(xPlayer.identifier, businessId(id))
+            if emp and (emp.role == 'courier' or emp.role == 'manager' or emp.role == 'owner') then allowed = true break end
+        end
+        if not allowed then notify(source, Config.Text.noAccess or 'Geen toegang.', 'error') return {} end
+    end
     return MySQL.query.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE status IN (?, ?) ORDER BY id ASC LIMIT 50', { 'ready', 'picked_up' }) or {}
 end)
 
 lib.callback.register('delfzijlrp_v3_restaurants:server:getStock', function(source, restId)
+    if not hasJobAccess(source, restId, { owner = true, manager = true, chef = true }) then notify(source, Config.Text.noAccess or 'Geen toegang.', 'error') return {} end
     return MySQL.query.await('SELECT ingredient, amount, minimum FROM delfzijlrp_restaurant_stock WHERE restaurant_id = ? ORDER BY ingredient ASC', { restId }) or {}
 end)
 
 RegisterNetEvent('delfzijlrp_v3_restaurants:server:addStock', function(restId, ingredient, amount)
     local src = source
     amount = tonumber(amount) or 0
+    if not hasJobAccess(src, restId, { owner = true, manager = true, chef = true }) then notify(src, Config.Text.noAccess or 'Geen toegang.', 'error') return end
     if not Config.Restaurants[restId] or tostring(ingredient or '') == '' or amount < 1 then notify(src, Config.Text.invalid, 'error') return end
     MySQL.insert.await('INSERT INTO delfzijlrp_restaurant_stock (restaurant_id, ingredient, amount, minimum) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount)', { restId, ingredient, amount, 10 })
     exports['delfzijlrp_v3_business_core']:AddLog(businessId(restId), 'stock_add', amount, ingredient, GetPlayerName(src))
@@ -159,6 +181,7 @@ RegisterNetEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', function(ord
     if not orderId or not allowed[status] then notify(src, Config.Text.invalid, 'error') return end
     local row = MySQL.single.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE id = ? LIMIT 1', { orderId })
     if not row then notify(src, Config.Text.invalid, 'error') return end
+    if not hasJobAccess(src, row.restaurant_id, { owner = true, manager = true, chef = true, cook = true, cashier = true }) then notify(src, Config.Text.noAccess or 'Geen toegang.', 'error') return end
     MySQL.update.await('UPDATE delfzijlrp_restaurant_orders SET status = ? WHERE id = ?', { status, orderId })
     exports['delfzijlrp_v3_business_core']:AddLog(businessId(row.restaurant_id), 'order_' .. status, row.price or 0, row.label .. ' #' .. orderId, GetPlayerName(src))
     notify(src, 'Order bijgewerkt.', 'success')
@@ -171,6 +194,7 @@ RegisterNetEvent('delfzijlrp_v3_restaurants:server:claimDelivery', function(orde
     orderId = tonumber(orderId)
     local row = MySQL.single.await('SELECT * FROM delfzijlrp_restaurant_orders WHERE id = ? LIMIT 1', { orderId })
     if not row or row.status ~= 'ready' then notify(src, Config.Text.invalid, 'error') return end
+    if not hasJobAccess(src, row.restaurant_id, { owner = true, manager = true, courier = true }) then notify(src, Config.Text.noAccess or 'Geen toegang.', 'error') return end
     MySQL.update.await('UPDATE delfzijlrp_restaurant_orders SET status = ?, courier_identifier = ?, courier_name = ?, delivery_fee = ? WHERE id = ?', { 'picked_up', xPlayer.identifier, GetPlayerName(src), Config.DeliveryFee or 25, orderId })
     exports['delfzijlrp_v3_business_core']:AddLog(businessId(row.restaurant_id), 'delivery_claim', Config.DeliveryFee or 25, row.label .. ' #' .. orderId, GetPlayerName(src))
     notify(src, Config.Text.accepted, 'success')
