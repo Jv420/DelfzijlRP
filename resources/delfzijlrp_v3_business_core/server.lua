@@ -4,6 +4,10 @@ local function notify(src, text, kind)
     TriggerClientEvent('ox_lib:notify', src, { title = 'Business Core', description = text, type = kind or 'inform' })
 end
 
+local function cleanId(id)
+    return tostring(id or ''):lower():gsub('%s+', '')
+end
+
 CreateThread(function()
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS delfzijlrp_businesses (
         id varchar(64) NOT NULL,
@@ -55,28 +59,62 @@ CreateThread(function()
         PRIMARY KEY(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 
-    for _, b in ipairs(Config.DefaultBusinesses) do
+    for _, b in ipairs(Config.DefaultBusinesses or {}) do
         MySQL.insert.await('INSERT IGNORE INTO delfzijlrp_businesses (id, label, type, balance, tax_rate) VALUES (?, ?, ?, ?, ?)', {
-            b.id, b.label, b.type, Config.DefaultBalance, Config.DefaultTaxRate
+            cleanId(b.id), b.label, b.type, Config.DefaultBalance, Config.DefaultTaxRate
         })
     end
 end)
 
 local function getBusiness(id)
-    id = tostring(id or ''):lower()
+    id = cleanId(id)
     if id == '' then return nil end
     return MySQL.single.await('SELECT * FROM delfzijlrp_businesses WHERE id = ? LIMIT 1', { id })
 end
 
-local function isMember(identifier, businessId)
-    local row = MySQL.single.await('SELECT * FROM delfzijlrp_business_employees WHERE business_id = ? AND identifier = ? AND active = 1 LIMIT 1', { businessId, identifier })
-    return row
+local function getEmployees(businessId, includeInactive)
+    businessId = cleanId(businessId)
+    if businessId == '' then return {} end
+    if includeInactive then
+        return MySQL.query.await('SELECT * FROM delfzijlrp_business_employees WHERE business_id = ? ORDER BY active DESC, role ASC, player_name ASC', { businessId }) or {}
+    end
+    return MySQL.query.await('SELECT * FROM delfzijlrp_business_employees WHERE business_id = ? AND active = 1 ORDER BY role ASC, player_name ASC', { businessId }) or {}
+end
+
+local function getMember(identifier, businessId)
+    businessId = cleanId(businessId)
+    if businessId == '' or not identifier then return nil end
+    return MySQL.single.await('SELECT * FROM delfzijlrp_business_employees WHERE business_id = ? AND identifier = ? AND active = 1 LIMIT 1', { businessId, identifier })
+end
+
+local function hasBusinessPermission(identifier, businessId, allowedRoles)
+    local member = getMember(identifier, businessId)
+    if not member then return false, nil end
+    if not allowedRoles then return true, member end
+    if type(allowedRoles) == 'string' then return member.role == allowedRoles, member end
+    return allowedRoles[member.role] == true, member
 end
 
 local function addLog(businessId, action, amount, details, by)
+    businessId = cleanId(businessId)
+    if businessId == '' then return false end
     MySQL.insert.await('INSERT INTO delfzijlrp_business_logs (business_id, action, amount, details, created_by) VALUES (?, ?, ?, ?, ?)', {
-        businessId, action, amount or 0, details or '', by or 'system'
+        businessId, action or 'note', tonumber(amount) or 0, details or '', by or 'system'
     })
+    return true
+end
+
+local function addTransaction(businessId, action, amount, details, by, updateTurnover)
+    businessId = cleanId(businessId)
+    amount = tonumber(amount) or 0
+    if businessId == '' or amount == 0 then return false end
+    if updateTurnover then
+        MySQL.update.await('UPDATE delfzijlrp_businesses SET balance = balance + ?, turnover = turnover + ? WHERE id = ?', { amount, math.max(amount, 0), businessId })
+    else
+        MySQL.update.await('UPDATE delfzijlrp_businesses SET balance = balance + ? WHERE id = ?', { amount, businessId })
+    end
+    addLog(businessId, action, amount, details, by)
+    return true
 end
 
 lib.callback.register('delfzijlrp_v3_business_core:server:list', function(source)
@@ -103,8 +141,8 @@ RegisterNetEvent('delfzijlrp_v3_business_core:server:claimOwner', function(busin
     MySQL.update.await('UPDATE delfzijlrp_businesses SET owner_identifier = ?, owner_name = ? WHERE id = ?', {
         xPlayer.identifier, identity and identity.display_name or GetPlayerName(src), business.id
     })
-    MySQL.insert.await('INSERT IGNORE INTO delfzijlrp_business_employees (business_id, identifier, player_name, role, salary) VALUES (?, ?, ?, ?, ?)', {
-        business.id, xPlayer.identifier, GetPlayerName(src), 'owner', 0
+    MySQL.insert.await('INSERT INTO delfzijlrp_business_employees (business_id, identifier, player_name, role, salary, active) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE role = VALUES(role), salary = VALUES(salary), active = 1, player_name = VALUES(player_name)', {
+        business.id, xPlayer.identifier, GetPlayerName(src), 'owner', 0, 1
     })
     addLog(business.id, 'owner_claim', 0, 'Eigenaar ingesteld', GetPlayerName(src))
     exports['delfzijlrp_v3_core']:AddLog(xPlayer.identifier, GetPlayerName(src), 'business_owner', business.id)
@@ -115,17 +153,21 @@ RegisterNetEvent('delfzijlrp_v3_business_core:server:addMoney', function(busines
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
+    businessId = cleanId(businessId)
     amount = tonumber(amount) or 0
     if amount <= 0 then notify(src, Config.Text.invalid, 'error') return end
-    local member = isMember(xPlayer.identifier, businessId)
+    local member = getMember(xPlayer.identifier, businessId)
     if not member then notify(src, Config.Text.noAccess, 'error') return end
     if xPlayer.getMoney() < amount then notify(src, 'Niet genoeg contant geld.', 'error') return end
     xPlayer.removeMoney(amount)
-    MySQL.update.await('UPDATE delfzijlrp_businesses SET balance = balance + ?, turnover = turnover + ? WHERE id = ?', { amount, amount, businessId })
-    addLog(businessId, 'deposit', amount, 'Inleg in bedrijfskas', GetPlayerName(src))
+    addTransaction(businessId, 'deposit', amount, 'Inleg in bedrijfskas', GetPlayerName(src), true)
     notify(src, Config.Text.updated, 'success')
 end)
 
 exports('GetBusiness', function(id) return getBusiness(id) end)
-exports('AddLog', function(businessId, action, amount, details, by) addLog(businessId, action, amount, details, by) end)
-exports('IsMember', function(identifier, businessId) return isMember(identifier, businessId) end)
+exports('GetEmployees', function(businessId, includeInactive) return getEmployees(businessId, includeInactive == true) end)
+exports('GetMember', function(identifier, businessId) return getMember(identifier, businessId) end)
+exports('HasBusinessPermission', function(identifier, businessId, allowedRoles) return hasBusinessPermission(identifier, businessId, allowedRoles) end)
+exports('AddTransaction', function(businessId, action, amount, details, by, updateTurnover) return addTransaction(businessId, action, amount, details, by, updateTurnover == true) end)
+exports('AddLog', function(businessId, action, amount, details, by) return addLog(businessId, action, amount, details, by) end)
+exports('IsMember', function(identifier, businessId) return getMember(identifier, businessId) ~= nil end)
