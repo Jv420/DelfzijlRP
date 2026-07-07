@@ -9,11 +9,28 @@ local function openReviews(restId)
             if input then TriggerServerEvent('delfzijlrp_v3_restaurants:server:review', restId, input[1], input[2]) end
         end }
     }
-    for _, r in ipairs(rows) do
-        opts[#opts + 1] = { title = r.player_name .. ' - ' .. tostring(r.rating) .. '/5', description = r.text or '', readOnly = true }
-    end
+    for _, r in ipairs(rows) do opts[#opts + 1] = { title = r.player_name .. ' - ' .. tostring(r.rating) .. '/5', description = r.text or '', readOnly = true } end
     lib.registerContext({ id = 'restaurant_reviews_' .. restId, title = 'Reviews', menu = 'restaurant_' .. restId, options = opts })
     lib.showContext('restaurant_reviews_' .. restId)
+end
+
+local function openStock(restId)
+    local rows = lib.callback.await('delfzijlrp_v3_restaurants:server:getStock', false, restId) or {}
+    local opts = {
+        { title = 'Voorraad aanvullen', description = 'Testfase / beheer', onSelect = function()
+            local input = lib.inputDialog('Voorraad aanvullen', {
+                { type = 'input', label = 'Ingrediënt', required = true },
+                { type = 'number', label = 'Aantal', required = true, min = 1, default = 50 }
+            })
+            if input then TriggerServerEvent('delfzijlrp_v3_restaurants:server:addStock', restId, input[1], input[2]) end
+        end }
+    }
+    for _, s in ipairs(rows) do
+        local low = tonumber(s.amount or 0) <= tonumber(s.minimum or 0)
+        opts[#opts + 1] = { title = s.ingredient, description = 'Aantal: ' .. tostring(s.amount) .. (low and ' | LAAG' or ''), readOnly = true }
+    end
+    lib.registerContext({ id = 'restaurant_stock_' .. restId, title = 'Voorraad ' .. restId, menu = 'restaurant_' .. restId, options = opts })
+    lib.showContext('restaurant_stock_' .. restId)
 end
 
 local function openRestaurant(restId)
@@ -25,13 +42,12 @@ local function openRestaurant(restId)
             title = p.label,
             description = '€' .. p.price,
             onSelect = function()
-                local input = lib.inputDialog(p.label, {
-                    { type = 'number', label = 'Aantal', required = true, min = 1, default = 1 }
-                })
+                local input = lib.inputDialog(p.label, {{ type = 'number', label = 'Aantal', required = true, min = 1, default = 1 }})
                 if input then TriggerServerEvent('delfzijlrp_v3_restaurants:server:buy', restId, p.item, input[1]) end
             end
         }
     end
+    opts[#opts + 1] = { title = 'Voorraad', description = 'Ingrediënten bekijken/aanvullen', onSelect = function() openStock(restId) end }
     opts[#opts + 1] = { title = 'Reviews', description = 'Bekijk of schrijf een review', onSelect = function() openReviews(restId) end }
     lib.registerContext({ id = 'restaurant_' .. restId, title = rest.label, options = opts })
     lib.showContext('restaurant_' .. restId)
@@ -39,9 +55,7 @@ end
 
 local function openList()
     local opts = {}
-    for id, rest in pairs(Config.Restaurants) do
-        opts[#opts + 1] = { title = rest.label, description = 'Menu openen', onSelect = function() openRestaurant(id) end }
-    end
+    for id, rest in pairs(Config.Restaurants) do opts[#opts + 1] = { title = rest.label, description = 'Menu openen', onSelect = function() openRestaurant(id) end } end
     lib.registerContext({ id = 'restaurant_list', title = 'Restaurants', options = opts })
     lib.showContext('restaurant_list')
 end
@@ -54,16 +68,11 @@ local function openKitchen(restId)
             title = '#' .. o.id .. ' ' .. o.label .. ' x' .. tostring(o.amount),
             description = o.restaurant_id .. ' | ' .. o.player_name .. ' | ' .. o.status,
             onSelect = function()
-                lib.registerContext({
-                    id = 'restaurant_order_' .. o.id,
-                    title = 'Order #' .. o.id,
-                    menu = 'restaurant_kitchen',
-                    options = {
-                        { title = 'In bereiding zetten', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'preparing') end },
-                        { title = 'Klaar zetten', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'ready') end },
-                        { title = 'Afgegeven zonder bezorger', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'delivered') end }
-                    }
-                })
+                lib.registerContext({ id = 'restaurant_order_' .. o.id, title = 'Order #' .. o.id, menu = 'restaurant_kitchen', options = {
+                    { title = 'In bereiding zetten', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'preparing') end },
+                    { title = 'Klaar zetten', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'ready') end },
+                    { title = 'Afgegeven zonder bezorger', onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:setOrderStatus', o.id, 'delivered') end }
+                }})
                 lib.showContext('restaurant_order_' .. o.id)
             end
         }
@@ -82,15 +91,10 @@ local function openDelivery()
             title = '#' .. o.id .. ' ' .. o.label .. ' x' .. tostring(o.amount),
             description = o.restaurant_id .. ' | klant: ' .. o.player_name .. ' | status: ' .. o.status,
             onSelect = function()
-                lib.registerContext({
-                    id = 'restaurant_delivery_' .. o.id,
-                    title = 'Bezorging #' .. o.id,
-                    menu = 'restaurant_delivery',
-                    options = {
-                        { title = 'Aannemen/ophalen', disabled = isPicked, onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:claimDelivery', o.id) end },
-                        { title = 'Afleveren', disabled = not isPicked, onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:finishDelivery', o.id) end }
-                    }
-                })
+                lib.registerContext({ id = 'restaurant_delivery_' .. o.id, title = 'Bezorging #' .. o.id, menu = 'restaurant_delivery', options = {
+                    { title = 'Aannemen/ophalen', disabled = isPicked, onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:claimDelivery', o.id) end },
+                    { title = 'Afleveren', disabled = not isPicked, onSelect = function() TriggerServerEvent('delfzijlrp_v3_restaurants:server:finishDelivery', o.id) end }
+                }})
                 lib.showContext('restaurant_delivery_' .. o.id)
             end
         }
@@ -105,32 +109,25 @@ CreateThread(function()
     for id, rest in pairs(Config.Restaurants) do
         if rest.blip then
             local b = AddBlipForCoord(rest.coords.x, rest.coords.y, rest.coords.z)
-            SetBlipSprite(b, rest.blip.sprite)
-            SetBlipColour(b, rest.blip.color)
-            SetBlipScale(b, rest.blip.scale)
-            SetBlipAsShortRange(b, true)
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentString(rest.label)
-            EndTextCommandSetBlipName(b)
+            SetBlipSprite(b, rest.blip.sprite); SetBlipColour(b, rest.blip.color); SetBlipScale(b, rest.blip.scale); SetBlipAsShortRange(b, true)
+            BeginTextCommandSetBlipName('STRING'); AddTextComponentString(rest.label); EndTextCommandSetBlipName(b)
         end
-        exports.ox_target:addSphereZone({
-            coords = rest.coords,
-            radius = rest.radius or 2.0,
-            debug = Config.Debug,
-            options = {
-                { name = 'rest_' .. id, label = Config.Text.open .. ' - ' .. rest.label, onSelect = function() openRestaurant(id) end },
-                { name = 'rest_kitchen_' .. id, label = Config.Text.kitchen .. ' - ' .. rest.label, onSelect = function() openKitchen(id) end },
-                { name = 'rest_delivery_' .. id, label = Config.Text.delivery .. ' - ' .. rest.label, onSelect = openDelivery }
-            }
-        })
+        exports.ox_target:addSphereZone({ coords = rest.coords, radius = rest.radius or 2.0, debug = Config.Debug, options = {
+            { name = 'rest_' .. id, label = Config.Text.open .. ' - ' .. rest.label, onSelect = function() openRestaurant(id) end },
+            { name = 'rest_kitchen_' .. id, label = Config.Text.kitchen .. ' - ' .. rest.label, onSelect = function() openKitchen(id) end },
+            { name = 'rest_delivery_' .. id, label = Config.Text.delivery .. ' - ' .. rest.label, onSelect = openDelivery },
+            { name = 'rest_stock_' .. id, label = Config.Text.stock .. ' - ' .. rest.label, onSelect = function() openStock(id) end }
+        }})
     end
 end)
 
 RegisterCommand(Config.Command, openList, false)
 RegisterCommand(Config.KitchenCommand, function()
-    local input = lib.inputDialog('Keukenscherm', {
-        { type = 'input', label = 'Restaurant ID leeg = alles', required = false }
-    })
+    local input = lib.inputDialog('Keukenscherm', {{ type = 'input', label = 'Restaurant ID leeg = alles', required = false }})
     openKitchen(input and input[1] or '')
 end, false)
 RegisterCommand(Config.DeliveryCommand, openDelivery, false)
+RegisterCommand(Config.StockCommand, function()
+    local input = lib.inputDialog('Voorraad', {{ type = 'input', label = 'Restaurant ID', required = true }})
+    if input then openStock(input[1]) end
+end, false)
